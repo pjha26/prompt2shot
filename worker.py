@@ -1,5 +1,5 @@
 import os
-from rq import Worker, Queue, Connection
+from rq import Worker, Queue
 from app.queue import redis_conn
 
 # Make sure our app modules can be imported
@@ -10,6 +10,6 @@ listen = ['default']
 
 if __name__ == '__main__':
     print("Starting RQ worker...")
-    with Connection(redis_conn):
-        worker = Worker(map(Queue, listen))
-        worker.work()
+    queues = [Queue(name, connection=redis_conn) for name in listen]
+    worker = Worker(queues, connection=redis_conn)
+    worker.work()

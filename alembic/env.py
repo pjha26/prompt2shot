@@ -25,7 +25,8 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Set the SQLAlchemy URL from our app settings dynamically
-config.set_main_option("sqlalchemy.url", settings.DATABASE_URL)
+# We need to escape % to %% because Alembic uses configparser which interpolates % values
+config.set_main_option("sqlalchemy.url", settings.DATABASE_URL.replace("%", "%%"))
 
 def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
