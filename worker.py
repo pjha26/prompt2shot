@@ -10,6 +10,7 @@ listen = ['default']
 
 if __name__ == '__main__':
     print("Starting RQ worker...")
+    from rq import SimpleWorker
     queues = [Queue(name, connection=redis_conn) for name in listen]
-    worker = Worker(queues, connection=redis_conn)
+    worker = SimpleWorker(queues, connection=redis_conn)
     worker.work()
