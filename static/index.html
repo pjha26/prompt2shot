@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompt2Shot — AI Product Image Generator</title>
+    <style>
+        /* ── Reset & base ─────────────────────────────────── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+            background: #f4f6f9;
+            color: #1e293b;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* ── Layout ───────────────────────────────────────── */
+        .container {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 2rem 1.25rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        header h1 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #0f172a;
+        }
+        header p {
+            font-size: 0.9rem;
+            color: #64748b;
+            margin-top: 0.25rem;
+        }
+
+        /* ── Form card ────────────────────────────────────── */
+        .card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+        .card h2 {
+            font-size: 1.05rem;
+            margin-bottom: 1rem;
+            color: #334155;
+        }
+
+        label {
+            display: block;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: #475569;
+            margin-bottom: 0.3rem;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 0.55rem 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            font-size: 0.88rem;
+            font-family: inherit;
+            color: #1e293b;
+            background: #f8fafc;
+            transition: border-color 0.15s;
+        }
+        input:focus, textarea:focus {
+            outline: none;
+            border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+        }
+        textarea { resize: vertical; min-height: 70px; }
+
+        .form-group { margin-bottom: 1rem; }
+        .form-group:last-of-type { margin-bottom: 0; }
+
+        .hint {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            margin-top: 0.2rem;
+        }
+
+        button[type="submit"] {
+            margin-top: 1.25rem;
+            width: 100%;
+            padding: 0.65rem;
+            background: #6366f1;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        button[type="submit"]:hover { background: #4f46e5; }
+        button[type="submit"]:disabled {
+            background: #a5b4fc;
+            cursor: not-allowed;
+        }
+
+        /* ── Job list ─────────────────────────────────────── */
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #334155;
+            margin-bottom: 0.75rem;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: #94a3b8;
+            font-size: 0.88rem;
+        }
+
+        .job-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+            transition: box-shadow 0.15s;
+        }
+        .job-card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+
+        .job-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+        .job-name {
+            font-weight: 600;
+            font-size: 0.92rem;
+            color: #1e293b;
+        }
+        .job-time {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            white-space: nowrap;
+        }
+
+        /* Status badges */
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.55rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+        }
+        .badge-pending     { background: #fef3c7; color: #92400e; }
+        .badge-processing  { background: #e0e7ff; color: #3730a3; }
+        .badge-completed   { background: #d1fae5; color: #065f46; }
+        .badge-failed      { background: #fee2e2; color: #991b1b; }
+
+        /* Expanded detail area (shown after completion/failure) */
+        .job-detail {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #f1f5f9;
+            font-size: 0.84rem;
+            color: #475569;
+        }
+        .job-detail strong { color: #334155; }
+
+        .generated-prompt {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 0.6rem 0.75rem;
+            margin-top: 0.4rem;
+            white-space: pre-wrap;
+            font-size: 0.82rem;
+            line-height: 1.5;
+        }
+
+        .result-image {
+            margin-top: 0.75rem;
+            max-width: 100%;
+            border-radius: 6px;
+            border: 1px solid #e2e8f0;
+        }
+
+        .error-msg {
+            margin-top: 0.4rem;
+            color: #dc2626;
+            font-size: 0.84rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🎨 Prompt2Shot</h1>
+            <p>Generate AI product images from a name &amp; description</p>
+        </header>
+
+        <!-- Submit form -->
+        <div class="card">
+            <h2>New Generation</h2>
+            <form id="generate-form">
+                <div class="form-group">
+                    <label for="product-name">Product Name</label>
+                    <input type="text" id="product-name" placeholder="e.g. Florentine Wooden Salad Bowl" required>
+                </div>
+                <div class="form-group">
+                    <label for="description">Description</label>
+                    <textarea id="description" placeholder="Describe the product — materials, style, intended use…" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="ref-url">Reference Image URL <span class="hint">(optional)</span></label>
+                    <input type="url" id="ref-url" placeholder="https://example.com/photo.jpg">
+                </div>
+                <button type="submit" id="submit-btn">Generate Image</button>
+            </form>
+        </div>
+
+        <!-- Job list -->
+        <h2 class="section-title">Jobs</h2>
+        <div id="job-list">
+            <div class="empty-state">Loading jobs…</div>
+        </div>
+    </div>
+
+    <script>
+    // ── Constants ────────────────────────────────────────
+    const POLL_INTERVAL_MS = 2500;  // poll every 2.5 seconds
+    const API_BASE = "";            // same origin
+
+    // Keep track of which jobs we're currently polling so we don't duplicate timers
+    const pollingJobs = new Set();
+
+    // ── DOM refs ────────────────────────────────────────
+    const form      = document.getElementById("generate-form");
+    const submitBtn = document.getElementById("submit-btn");
+    const jobListEl = document.getElementById("job-list");
+
+    // ── Helpers ─────────────────────────────────────────
+
+    /** Format an ISO date string into a short, human-readable form. */
+    function formatTime(isoString) {
+        const d = new Date(isoString);
+        return d.toLocaleString(undefined, {
+            month: "short", day: "numeric",
+            hour: "2-digit", minute: "2-digit"
+        });
+    }
+
+    /** Return the CSS class for a status badge. */
+    function badgeClass(status) {
+        return "badge badge-" + status;   // e.g. "badge badge-pending"
+    }
+
+    /**
+     * Build the HTML for a single job card.
+     * `job` must have at least: id, product_name, status, created_at.
+     * It may also include: generated_prompt, image_url, error_message (from full detail).
+     */
+    function renderJobCard(job) {
+        let detailHtml = "";
+
+        if (job.status === "completed") {
+            detailHtml = `<div class="job-detail">`;
+            if (job.generated_prompt) {
+                detailHtml += `
+                    <strong>Generated Prompt</strong>
+                    <div class="generated-prompt">${escapeHtml(job.generated_prompt)}</div>`;
+            }
+            if (job.image_url) {
+                detailHtml += `
+                    <img class="result-image" src="${escapeHtml(job.image_url)}" alt="Generated image">`;
+            }
+            detailHtml += `</div>`;
+        } else if (job.status === "failed") {
+            detailHtml = `
+                <div class="job-detail">
+                    <strong>Error</strong>
+                    <div class="error-msg">${escapeHtml(job.error_message || "Unknown error")}</div>
+                </div>`;
+        }
+
+        return `
+            <div class="job-card" id="job-${job.id}">
+                <div class="job-header">
+                    <span class="job-name">${escapeHtml(job.product_name)}</span>
+                    <span>
+                        <span class="${badgeClass(job.status)}">${job.status}</span>
+                        <span class="job-time">${formatTime(job.created_at)}</span>
+                    </span>
+                </div>
+                ${detailHtml}
+            </div>`;
+    }
+
+    /** Basic HTML escaping to prevent XSS from user-supplied text. */
+    function escapeHtml(text) {
+        const div = document.createElement("div");
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    // ── API calls ───────────────────────────────────────
+
+    /** Fetch all jobs and render the list. Called once on page load. */
+    async function loadJobs() {
+        try {
+            const res = await fetch(API_BASE + "/jobs");
+            if (!res.ok) throw new Error("Failed to fetch jobs");
+            const jobs = await res.json();
+
+            if (jobs.length === 0) {
+                jobListEl.innerHTML = `<div class="empty-state">No jobs yet — submit one above!</div>`;
+                return;
+            }
+
+            jobListEl.innerHTML = jobs.map(renderJobCard).join("");
+
+            // Start polling for any in-progress jobs
+            jobs.forEach(job => {
+                if (job.status === "pending" || job.status === "processing") {
+                    startPolling(job.id);
+                }
+            });
+        } catch (err) {
+            jobListEl.innerHTML = `<div class="empty-state">Error loading jobs: ${escapeHtml(err.message)}</div>`;
+        }
+    }
+
+    /**
+     * Poll GET /jobs/{id} every POLL_INTERVAL_MS until the job reaches
+     * a terminal state (completed or failed), then update the card in place.
+     */
+    function startPolling(jobId) {
+        if (pollingJobs.has(jobId)) return;   // already polling this one
+        pollingJobs.add(jobId);
+
+        const timer = setInterval(async () => {
+            try {
+                const res = await fetch(API_BASE + `/jobs/${jobId}`);
+                if (!res.ok) return;
+                const job = await res.json();
+
+                // Update the card in place
+                const card = document.getElementById(`job-${jobId}`);
+                if (card) card.outerHTML = renderJobCard(job);
+
+                // Stop polling once terminal
+                if (job.status === "completed" || job.status === "failed") {
+                    clearInterval(timer);
+                    pollingJobs.delete(jobId);
+                }
+            } catch (err) {
+                console.error("Polling error:", err);
+            }
+        }, POLL_INTERVAL_MS);
+    }
+
+    // ── Form submission ─────────────────────────────────
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        // Collect form values
+        const productName = document.getElementById("product-name").value.trim();
+        const description = document.getElementById("description").value.trim();
+        const refUrl      = document.getElementById("ref-url").value.trim() || null;
+
+        // Disable button while submitting
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Submitting…";
+
+        try {
+            const res = await fetch(API_BASE + "/generate", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    product_name: productName,
+                    description: description,
+                    reference_image_url: refUrl
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({}));
+                throw new Error(err.detail || "Request failed");
+            }
+
+            const data = await res.json();
+            const jobId = data.job_id;
+
+            // Build a temporary job object so we can immediately show it
+            const newJob = {
+                id: jobId,
+                product_name: productName,
+                status: "pending",
+                created_at: new Date().toISOString()
+            };
+
+            // Remove the "no jobs" empty state if present, then prepend the new card
+            const emptyState = jobListEl.querySelector(".empty-state");
+            if (emptyState) emptyState.remove();
+            jobListEl.insertAdjacentHTML("afterbegin", renderJobCard(newJob));
+
+            // Start polling for this new job
+            startPolling(jobId);
+
+            // Reset form
+            form.reset();
+        } catch (err) {
+            alert("Error: " + err.message);
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Generate Image";
+        }
+    });
+
+    // ── Init ────────────────────────────────────────────
+    loadJobs();
+    </script>
+</body>
+</html>

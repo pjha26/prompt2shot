@@ -24,3 +24,12 @@ class JobResponse(BaseModel):
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+# Lightweight schema for the job list (GET /jobs)
+class JobListItem(BaseModel):
+    id: UUID
+    product_name: str
+    status: JobStatus
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)

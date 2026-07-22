@@ -53,9 +53,14 @@ This is the FastAPI backend for the Prompt2Shot service, which takes product inf
    uvicorn app.main:app --reload
    ```
 
+7. **Access the Frontend**
+   Once the server is running, open your browser and navigate to:
+   [http://127.0.0.1:8000/](http://127.0.0.1:8000/) to access the Prompt2Shot Engine frontend.
+
 ## Endpoints
 
-- `GET /`: Welcome message
+- `GET /`: Serves the frontend web interface
 - `GET /health`: Health check endpoint (verifies database connection)
-- `POST /generate`: Submit a new job to generate an image (returns immediately with a job ID)
+- `GET /jobs`: Returns a list of all jobs, ordered by most recent
 - `GET /jobs/{job_id}`: Poll the status of a specific job
+- `POST /generate`: Submit a new job to generate an image (returns immediately with a job ID)
