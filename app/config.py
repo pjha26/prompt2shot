@@ -4,6 +4,12 @@ class Settings(BaseSettings):
     # Database connection string
     # Expected format for asyncpg: postgresql+asyncpg://user:password@host:port/dbname
     DATABASE_URL: str
+    
+    # Redis configuration
+    REDIS_URL: str = "redis://localhost:6379/0"
+    
+    # Groq API configuration
+    GROQ_API_KEY: str = ""
 
     model_config = SettingsConfigDict(
         env_file=".env", 

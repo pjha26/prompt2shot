@@ -5,7 +5,7 @@ from uuid import UUID
 from app.models import JobStatus
 
 # Request schema for creating a job
-class JobCreate(BaseModel):
+class GenerateRequest(BaseModel):
     product_name: str
     description: str
     reference_image_url: Optional[str] = None
