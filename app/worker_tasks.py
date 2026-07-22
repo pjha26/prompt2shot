@@ -47,7 +47,7 @@ async def process_job_async(job_id: str):
                         "content": prompt_instruction,
                     }
                 ],
-                model="llama3-8b-8192",  # Fast model for prompt generation
+                model="llama-3.1-8b-instant",  # Fast model for prompt generation
                 temperature=0.7,
                 max_tokens=256,
             )
