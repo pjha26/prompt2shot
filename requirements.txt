@@ -7,3 +7,4 @@ pydantic-settings>=2.0.0
 redis>=5.0.0
 rq>=1.15.0
 groq>=0.9.0
+httpx>=0.24.0
