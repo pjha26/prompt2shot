@@ -5,7 +5,7 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal
 from app.models import Job, JobStatus
 from app.config import settings
-from app.image_gen import mock_generate_image
+from app.image_gen import generate_image
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +55,9 @@ async def process_job_async(job_id: str):
             generated_prompt = completion.choices[0].message.content.strip()
             job.generated_prompt = generated_prompt
             
-            # 2. Call mock image generation
+            # 2. Call image generation API
             logger.info(f"Generating image for job {job_id}")
-            image_url = await mock_generate_image(generated_prompt)
+            image_url = await generate_image(generated_prompt)
             job.image_url = image_url
             
             # 3. Mark job as completed
