@@ -70,10 +70,31 @@ async def generate_image(request: GenerateRequest, db: AsyncSession = Depends(ge
     Creates a new image generation job and enqueues it for background processing.
     Returns the job_id immediately.
     """
+    product_name = request.product_name.strip()
+    description = request.description.strip()
+    
+    if not product_name or not description:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Product name and description cannot be empty or whitespace only"
+        )
+        
+    if len(product_name) > 500:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Product name exceeds maximum length of 500 characters"
+        )
+        
+    if len(description) > 2000:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Description exceeds maximum length of 2000 characters"
+        )
+
     # 1. Create a job row in Postgres with status "pending"
     job = Job(
-        product_name=request.product_name,
-        description=request.description,
+        product_name=product_name,
+        description=description,
         reference_image_url=request.reference_image_url,
         status=JobStatus.pending
     )

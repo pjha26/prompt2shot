@@ -22,7 +22,8 @@ async def generate_image(prompt: str) -> str:
     Generate an image using Pollinations.ai's free API.
     Falls back to mock_generate_image if the request fails.
     """
-    encoded_prompt = urllib.parse.quote(prompt)
+    safe_prompt = prompt[:1500] if len(prompt) > 1500 else prompt
+    encoded_prompt = urllib.parse.quote(safe_prompt)
     url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=800&height=600&nologo=true"
     
     try:

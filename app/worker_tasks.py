@@ -40,19 +40,35 @@ async def process_job_async(job_id: str):
                 f"Description: {job.description}"
             )
             
-            completion = await groq_client.chat.completions.create(
-                messages=[
-                    {
-                        "role": "user",
-                        "content": prompt_instruction,
-                    }
-                ],
-                model="llama-3.1-8b-instant",  # Fast model for prompt generation
-                temperature=0.7,
-                max_tokens=256,
-            )
+            generated_prompt = None
+            for attempt in range(2):
+                try:
+                    completion = await asyncio.wait_for(
+                        groq_client.chat.completions.create(
+                            messages=[
+                                {
+                                    "role": "user",
+                                    "content": prompt_instruction,
+                                }
+                            ],
+                            model="llama-3.1-8b-instant",  # Fast model for prompt generation
+                            temperature=0.7,
+                            max_tokens=256,
+                        ),
+                        timeout=20.0
+                    )
+                    content = completion.choices[0].message.content.strip()
+                    if content:
+                        generated_prompt = content
+                        break
+                except Exception as e:
+                    logger.warning(f"Groq API attempt {attempt + 1} failed: {str(e)}")
+                    if attempt == 1:
+                        logger.error("Groq API failed after retry. Using fallback prompt.")
             
-            generated_prompt = completion.choices[0].message.content.strip()
+            if not generated_prompt:
+                generated_prompt = f"Professional product photograph of {job.product_name}, {job.description}, studio lighting, high quality"
+                
             job.generated_prompt = generated_prompt
             
             # 2. Call image generation API
@@ -66,9 +82,10 @@ async def process_job_async(job_id: str):
             logger.info(f"Job {job_id} completed successfully.")
             
         except Exception as e:
-            logger.error(f"Error processing job {job_id}: {str(e)}")
+            error_msg = str(e) or type(e).__name__
+            logger.error(f"Error processing job {job_id}: {error_msg}")
             job.status = JobStatus.failed
-            job.error_message = str(e)
+            job.error_message = f"Job failed during processing: {error_msg}"
             await session.commit()
 
 def process_job(job_id: str):
